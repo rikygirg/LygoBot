@@ -19,9 +19,8 @@ if LOCAL_TESTING_TRADING:
     # creo bots:
     wallets = [Wallet(1000 * (i + 1), fees={"buy": 0.00, "sell": 0.00}) for i in range(NUMERO_BOT)]
     strats = [Strategy(indicators=["RSI(6)", "RSI(12)", "RSI(24)"],
-                       constraints_buy=["mean(RSI(6), RSI(12), RSI(24)) <= 80",
-                                        SingleParameter(name="volume", operator=">=", value=1)],
-                       constraints_sell=["db['price_buy'] + 30 >= CURRENT_PRICE", ExitMargin(take_profit=300, stop_loss=200)]) for i in range(NUMERO_BOT)]
+                       constraints_buy=["mean(RSI(6), RSI(12), RSI(24)) <= 80"],
+                       constraints_sell=[ExitMargin(take_profit=60, stop_loss=30)]) for i in range(NUMERO_BOT)]
     bots = [Bot(wallets[i], strats[i]) for i in range(NUMERO_BOT)]
 
 
