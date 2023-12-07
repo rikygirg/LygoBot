@@ -12,6 +12,9 @@ db = Database('data.json')
 LOCAL_TESTING_TRADING = True
 NUMERO_BOT = 1
 
+# LEGENDA:
+# SingleParameter(name="volume", operator=">=", value=1)
+# ExitMargin(take_profit=300, stop_loss=200)
 if LOCAL_TESTING_TRADING:
     # creo bots:
     wallets = [Wallet(1000 * (i + 1), fees={"buy": 0.00, "sell": 0.00}) for i in range(NUMERO_BOT)]
