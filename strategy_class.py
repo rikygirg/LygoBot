@@ -82,5 +82,3 @@ class Strategy:
             self.qty = wallet.balanceBTC
             return self.qty, data.iloc[-1]["close"]
         return 0, data.iloc[-1]["close"]
-
-# Modificato
