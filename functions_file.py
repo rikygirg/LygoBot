@@ -1,5 +1,6 @@
 import numpy as np
 import sys
+from indicators_file import K_HEIGHT
 
 
 def Log(message):

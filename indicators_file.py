@@ -1,5 +1,8 @@
 import re
 import sys
+
+import numpy as np
+
 from db_file import Database
 
 db = Database('data.json')
@@ -34,10 +37,16 @@ def EMA(U, D, avgs, alpha, period=6, i=1):
     return EMA(U, D, avgs, alpha, period, i + 1)
 
 
-def TP(data):
-    diff = data.iloc[-1]["close"] - db["price_buy"]
-    print(diff)
-    return diff
+def K_HEIGHT(data, period=6, mode="MEAN"):
+    period = int(period)
+    high = data["high"][-period:]
+    low = data["low"][-period:]
+    candle_height = high - low
+    if mode == "MEAN":
+        db["K_HEIGHT"] = np.mean(candle_height)
+        return True
+    db["K_HEIGHT"] = np.mean(candle_height)
+    return True
 
 
 def RSI(data, period=6, mode="normal"):
@@ -56,16 +65,22 @@ def RSI(data, period=6, mode="normal"):
     else:
         RS = AvgU / AvgD
     rsi_value = 100 - 100 / (1 + RS)
+    db["RSI"] = rsi_value
     return rsi_value
 
 
 def Get_Indicator(input_string):
-    pattern = r'(\w+)\(([\d.,\s]+)\)'
+    pattern = r'(\w+)\((.*?)\)'
     match = re.match(pattern, input_string)
     if match is not None:
         name = match.group(1)
         arguments_str = match.group(2)
-        arguments = [float(arg) for arg in arguments_str.split(',')]
+        arguments = [arg.replace(" ", "") for arg in arguments_str.split(',')]
+        for i in range(len(arguments)):
+            try:
+                arguments[i] = float(arguments[i])
+            except:
+                pass
     else:
         print("Cannot identify indicator named: " + input_string)
         return None

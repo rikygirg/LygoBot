@@ -18,21 +18,23 @@ NUMERO_BOT = 1
 if LOCAL_TESTING_TRADING:
     # creo bots:
     wallets = [Wallet(1000 * (i + 1), fees={"buy": 0.00, "sell": 0.00}) for i in range(NUMERO_BOT)]
-    strats = [Strategy(indicators=["RSI(6)", "RSI(12)", "RSI(24)"],
+    strats = [Strategy(indicators=["RSI(6)", "RSI(12)", "RSI(24)", "K_HEIGHT(6, mean)"],
                        constraints_buy=["mean(RSI(6), RSI(12), RSI(24)) <= 12"],
-                       constraints_sell=[ExitMargin(take_profit=60, stop_loss=30)]) for i in range(NUMERO_BOT)]
+                       constraints_sell=["K_HEIGHT(6, mean)", ExitMargin(take_profit=60 * float(db["K_HEIGHT"]/40),
+                                                                         stop_loss=30 * float(db["K_HEIGHT"]/40))])
+              for i in range(NUMERO_BOT)]
     bots = [Bot(wallets[i], strats[i]) for i in range(NUMERO_BOT)]
 
 
 ######### TO DO ##########
-# 1) indicatore di altezza candele precedenti (media, max, exponential)
+# 1) indicatore di altezza candele precedenti (media, max, exponential)  (DONE)
 # 2) decidere sl tp precentuale
-# 3) classe che salva su db una variabile runnando codice
+# 3) classe che salva su db una variabile runnando codice  (DONE)
 # NUOVA STRATEGIA
 # 1) ema12, ema24
 # 2) comprare: cross 12 > 24
 # 3) vendita: cross 12 < 24 or rsi(6) >< qualche valore or tp_sl_dinamico
-
+# LOGGER
 def ora(h=0, m=0, s=0):
     orario = dt.datetime.now() + dt.timedelta(hours=h, minutes=m, seconds=s)
     orario = orario.strftime("%D:%H:%M:%S")
