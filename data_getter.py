@@ -1,14 +1,11 @@
+import sys
+
 from db_file import Database
 import pandas as pd
 import datetime as dt
-from binance import Client
 import time
 
-db = Database('data.json')
-client = Client(db['api_key'], db['api_secret'])
-
-
-def getData(timeframe, col):
+def getData(timeframe, col, client):
     symbol = "BTCUSDT"
     interval = '1m'
     d = None
@@ -26,7 +23,7 @@ def getData(timeframe, col):
     return d
 
 
-def get_period_data(lastData):
+def get_period_data(lastData, db):
     tic = time.time()  # Record start time
     col = list(lastData.columns)
     lastTime = dt.datetime.strptime(db["lastTime"], '%H:%M:%S.%f')
@@ -45,4 +42,39 @@ def get_period_data(lastData):
 
 
 def get_current_price():
-    return client.get_symbol_ticker(symbol="BTCUSDT")["price"]
+    # return client.get_symbol_ticker(symbol="BTCUSDT")["price"]
+    return None
+
+
+class Backtesting:
+    def __init__(self, file_path):
+        # Load the DataFrame from the specified CSV file with 'date' as index
+        self.df = pd.read_csv(file_path)
+
+        # Initialize tick to 0
+        self.tick = 60 * 30
+
+        # print("Extimated time = " + str(len(self.df) / 100 * 13 / 60) + " minutes")
+
+    def get_data(self, N, col):
+
+        # Check if there is enough data
+        if self.tick >= len(self.df):
+            print("Insufficient data for the given N.")
+            sys.exit()
+
+        output_df = pd.DataFrame(columns=col)
+        i = self.tick
+        n = 1
+        while n < N:
+            while self.df["date"].iloc[i][17:19] != "59":
+                i -= 1
+            output_df.loc[self.df["date"].iloc[i]] = self.df[col].iloc[i]
+            n += 1
+            i -= 59
+        self.tick += 1
+        output_df = output_df[::-1]
+        output_df = output_df.iloc[-N:]
+        output_df.loc[self.df["date"].iloc[self.tick]] = self.df[col].iloc[self.tick]
+        # print("   tick" + str(self.tick) + " out of " + str(len(self.df)))
+        return output_df

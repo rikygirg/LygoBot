@@ -4,12 +4,17 @@ from bot_class import Bot
 from strategy_class import Strategy
 from functions_file import ExitMargin, SingleParameter
 from db_file import Database
+from binance import Client
 import data_getter
 import datetime as dt
 import sys
 
 db = Database('data.json')
+client = Client(db['api_key'], db['api_secret'])
 LOCAL_TESTING_TRADING = True
+BACKTESTING = True
+if BACKTESTING:
+    backTester = data_getter.Backtesting("data/prova2.csv")
 NUMERO_BOT = 1
 
 # LEGENDA:
@@ -17,13 +22,14 @@ NUMERO_BOT = 1
 # ExitMargin(take_profit=300, stop_loss=200)
 if LOCAL_TESTING_TRADING:
     # creo bots:
-    wallets = [Wallet(1000 * (i + 1), fees={"buy": 0.00, "sell": 0.00}) for i in range(NUMERO_BOT)]
-    strats = [Strategy(indicators=["RSI(6)", "RSI(12)", "RSI(24)", "K_HEIGHT(6, mean)"],
-                       constraints_buy=["mean(RSI(6), RSI(12), RSI(24)) <= 12"],
-                       constraints_sell=["K_HEIGHT(6, mean)", ExitMargin(take_profit=60 * float(db["K_HEIGHT"]/40),
-                                                                         stop_loss=30 * float(db["K_HEIGHT"]/40))])
-              for i in range(NUMERO_BOT)]
-    bots = [Bot(wallets[i], strats[i]) for i in range(NUMERO_BOT)]
+    databases = [Database(f"db_bot{i}.json") for i in range(NUMERO_BOT)]
+    wallets = [Wallet(1000, fees={"buy": 0.00, "sell": 0.00}) for i in range(NUMERO_BOT)]
+    strats = [Strategy(indicators=["RSI(6)", "RSI(12)", "RSI(24)", "K_HEIGHT(6, MEAN)"],
+                       constraints_buy=["mean(RSI(6), RSI(12), RSI(24)) <= 12", "K_HEIGHT(6, MEAN)"],
+                       constraints_sell=["K_HEIGHT(6, MEAN)", ExitMargin(take_profit=2,
+                                                                         stop_loss=1, dynamic=True,
+                                                                         database=databases[i])]) for i in range(NUMERO_BOT)]
+    bots = [Bot(wallets[i], strats[i], databases[i]) for i in range(NUMERO_BOT)]
 
 
 ######### TO DO ##########
@@ -57,22 +63,27 @@ data_to_update = [True for i in range(NUMERO_BOT)]
 
 while True:
     # RACCOGLIAMO I DATI
-    if data_to_update[bot]:
-        lastData = data_getter.getData(24 + 1, ["close", "volume", "high", "low", "qav"])
-    t, lastData = data_getter.get_period_data(lastData)
-    data_to_update[bot] = False
+    if BACKTESTING:
+        lastData = backTester.get_data(N=24 + 1, col=["close", "volume", "high", "low", "qav"])
+    else:
+        if data_to_update[bot]:
+            lastData = data_getter.getData(24 + 1, ["close", "volume", "high", "low", "qav"], client)
+        t, lastData = data_getter.get_period_data(lastData, db)
+        data_to_update[bot] = False
     for bot in range(len(bots)):
         if not entrata_attiva[bot]:
-            if bots[bot].Check_to_Buy(lastData):
+            if bots[bot].Check_to_Buy(lastData, db):
                 print("\n" + ora() + "\nI JUST BOUGHT (bot_" + str(bot) + ") " + str(
                     bots[bot].wallet.balanceBTC) + " BTC at " + str(lastData.iloc[-1]["close"]))
                 entrata_attiva[bot] = True
-            time.sleep(0.1)
+            if not BACKTESTING:
+                time.sleep(0.1)
         if entrata_attiva[bot]:
-            if bots[bot].Check_to_Sell(lastData):
+            if bots[bot].Check_to_Sell(lastData, db):
                 print(
                     "\n" + ora() + "\nI JUST SOLD (bot=" + str(bot) + ") all BTC at " + str(lastData.iloc[-1]["close"]))
                 print("Net balance usd: ", bots[bot].wallet.balanceUSD)
                 data_to_update[bot] = True
                 entrata_attiva[bot] = False
-            time.sleep(0.1)
+            if not BACKTESTING:
+                time.sleep(0.1)

@@ -48,23 +48,41 @@ class SingleParameter:
 
 
 class ExitMargin:
-    def __init__(self, stop_loss, take_profit, variable_in_percentage=False):
+    def __init__(self, stop_loss, take_profit, variable_in_percentage=False,  dynamic=False, database=None):
+        self.offsetDown = None
+        self.offsetUp = None
         self.stop_loss = stop_loss
         self.take_profit = take_profit
         self.variable_in_percentage = variable_in_percentage
+        self.dynamic = dynamic
+        self.bot_db = database
+        self.flag = False
 
     def Check(self, data, db):
+        if self.dynamic and not self.flag:
+            self.flag = True
+            self.offsetUp = float(db["K_HEIGHT"])*self.take_profit
+            self.offsetDown = float(db["K_HEIGHT"])*self.stop_loss
+        if not self.dynamic:
+            self.offsetUp = self.take_profit
+            self.offsetDown = self.stop_loss
+
+        # print(self.offsetUp, self.offsetDown)
         condition = False
         if self.variable_in_percentage:
+            if condition:
+                self.flag = False
             return condition
         else:
             price = data.iloc[-1]["close"]
-            condition_tp = price >= db["price_buy"] + self.take_profit
-            condition_sl = price <= db["price_buy"] - abs(self.stop_loss)
+            condition_tp = price >= self.bot_db["price_buy"] + self.offsetUp
+            condition_sl = price <= self.bot_db["price_buy"] - abs(self.offsetDown)
             condition = condition_tp or condition_sl
-            message = str(price) + " tp: " + str(db["price_buy"] + self.take_profit) + " sl: " + str(
-                db["price_buy"] - abs(self.stop_loss))
+            message = str(price) + " tp: " + str(self.bot_db["price_buy"] + self.offsetUp) + " sl: " + str(
+                self.bot_db["price_buy"] - abs(self.offsetDown))
             Log(message)
+            if condition:
+                self.flag = False
         return condition
 
 

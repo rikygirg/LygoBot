@@ -3,10 +3,6 @@ import sys
 
 import numpy as np
 
-from db_file import Database
-
-db = Database('data.json')
-
 
 def _media(U, D, mode="normal"):
     if mode == "normal":
@@ -37,19 +33,19 @@ def EMA(U, D, avgs, alpha, period=6, i=1):
     return EMA(U, D, avgs, alpha, period, i + 1)
 
 
-def K_HEIGHT(data, period=6, mode="MEAN"):
+def K_HEIGHT(data, db, period=6, mode="MEAN"):
     period = int(period)
-    high = data["high"][-period:]
-    low = data["low"][-period:]
+    high = data["close"][-(period+2):-2].to_numpy()
+    low = data["close"][-(period+1):-1].to_numpy()
     candle_height = high - low
     if mode == "MEAN":
-        db["K_HEIGHT"] = np.mean(candle_height)
+        db["K_HEIGHT"] = np.mean(abs(candle_height))
         return True
-    db["K_HEIGHT"] = np.mean(candle_height)
+    db["K_HEIGHT"] = np.mean(abs(candle_height))
     return True
 
 
-def RSI(data, period=6, mode="normal"):
+def RSI(data, db, period=6, mode="normal"):
     data = data[["close"]]
     period = int(period)
     U = data.diff()
@@ -65,7 +61,8 @@ def RSI(data, period=6, mode="normal"):
     else:
         RS = AvgU / AvgD
     rsi_value = 100 - 100 / (1 + RS)
-    db["RSI"] = rsi_value
+    # print(db)
+    db[f"RSI{period}"] = rsi_value
     return rsi_value
 
 
