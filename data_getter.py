@@ -5,6 +5,7 @@ import pandas as pd
 import datetime as dt
 import time
 
+
 def getData(timeframe, col, client):
     symbol = "BTCUSDT"
     interval = '1m'

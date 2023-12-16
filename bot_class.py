@@ -18,3 +18,4 @@ class Bot:
             self.wallet.sell(amountBTC, priceBTC)
             return True
         return False
+

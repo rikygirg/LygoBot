@@ -106,3 +106,4 @@ def MEAN(*args):
     mean = float(np.mean(array))
     Log(str(round(mean, 4)))
     return mean
+

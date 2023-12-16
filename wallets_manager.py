@@ -13,3 +13,4 @@ class Wallet:
     def sell(self, amountBTC, priceBTC):
         self.balanceUSD += amountBTC * priceBTC * (1 - self.fees["sell"])
         self.balanceBTC -= amountBTC
+
