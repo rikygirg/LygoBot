@@ -9,6 +9,19 @@ def Log(message):
     sys.stdout.flush()
 
 
+class Logger:
+    def __init__(self):
+        self.was_printing_continous = False
+
+    def PrintLine(self, message):
+        if self.was_printing_continous:
+            print()
+        print(message)
+
+    def PrintContinous(self, message):
+        print(message, end="/r")
+
+
 class SingleParameter:
     def __init__(self, name, operator, value, offset=0):
         if name in ['open_time', 'open', 'high', 'low', 'close', 'volume', 'close_time',
@@ -48,7 +61,7 @@ class SingleParameter:
 
 
 class ExitMargin:
-    def __init__(self, stop_loss, take_profit, variable_in_percentage=False,  dynamic=False, database=None):
+    def __init__(self, stop_loss, take_profit, variable_in_percentage=False, dynamic=False, database=None):
         self.offsetDown = None
         self.offsetUp = None
         self.stop_loss = stop_loss
@@ -61,8 +74,8 @@ class ExitMargin:
     def Check(self, data, db):
         if self.dynamic and not self.flag:
             self.flag = True
-            self.offsetUp = float(db["K_HEIGHT"])*self.take_profit
-            self.offsetDown = float(db["K_HEIGHT"])*self.stop_loss
+            self.offsetUp = float(db["K_HEIGHT"]) * self.take_profit
+            self.offsetDown = float(db["K_HEIGHT"]) * self.stop_loss
         if not self.dynamic:
             self.offsetUp = self.take_profit
             self.offsetDown = self.stop_loss

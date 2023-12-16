@@ -29,7 +29,7 @@ if LOCAL_TESTING_TRADING:
                        constraints_sell=["K_HEIGHT(6, MEAN)", ExitMargin(take_profit=2,
                                                                          stop_loss=1, dynamic=True,
                                                                          database=databases[i])]) for i in range(NUMERO_BOT)]
-    bots = [Bot(wallets[i], strats[i], databases[i]) for i in range(NUMERO_BOT)]
+    bots = [Bot(wallets[i], strats[i], databases[i], f"bot{i}") for i in range(NUMERO_BOT)]
 
 
 ######### TO DO ##########

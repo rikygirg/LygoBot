@@ -1,8 +1,9 @@
 class Bot:
-    def __init__(self, w, strat, database):
+    def __init__(self, w, strat, database, name):
         self.wallet = w
         self.strategy = strat
         self.db = database
+        self.name = name
 
     def Check_to_Buy(self, dati, db):
         (amountBTC, priceBTC) = self.strategy.Calculate_if_Buy(dati, self.wallet, self.db, db)
