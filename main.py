@@ -12,9 +12,9 @@ import sys
 db = Database('data.json')
 client = Client(db['api_key'], db['api_secret'])
 LOCAL_TESTING_TRADING = True
-BACKTESTING = True
+BACKTESTING = False
 if BACKTESTING:
-    backTester = data_getter.Backtesting("data/prova2.csv")
+    backTester = data_getter.Backtesting("data/data1oct_14dec2023.csv")
 NUMERO_BOT = 1
 
 # LEGENDA:
@@ -25,7 +25,7 @@ if LOCAL_TESTING_TRADING:
     databases = [Database(f"db_bot{i}.json") for i in range(NUMERO_BOT)]
     wallets = [Wallet(1000, fees={"buy": 0.00, "sell": 0.00}) for i in range(NUMERO_BOT)]
     strats = [Strategy(indicators=["RSI(6)", "RSI(12)", "RSI(24)", "K_HEIGHT(6, MEAN)"],
-                       constraints_buy=["mean(RSI(6), RSI(12), RSI(24)) <= 12", "K_HEIGHT(6, MEAN)"],
+                       constraints_buy=["mean(RSI(6), RSI(12), RSI(24)) <= 15", "K_HEIGHT(6, MEAN)"],
                        constraints_sell=["K_HEIGHT(6, MEAN)", ExitMargin(take_profit=2,
                                                                          stop_loss=1, dynamic=True,
                                                                          database=databases[i])]) for i in range(NUMERO_BOT)]
@@ -68,7 +68,7 @@ while True:
     else:
         if data_to_update[bot]:
             lastData = data_getter.getData(24 + 1, ["close", "volume", "high", "low", "qav"], client)
-        t, lastData = data_getter.get_period_data(lastData, db)
+        t, lastData = data_getter.get_period_data(lastData, db, client)
         data_to_update[bot] = False
     for bot in range(len(bots)):
         if not entrata_attiva[bot]:

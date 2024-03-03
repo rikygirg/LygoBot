@@ -24,18 +24,18 @@ def getData(timeframe, col, client):
     return d
 
 
-def get_period_data(lastData, db):
+def get_period_data(lastData, db, client):
     tic = time.time()  # Record start time
     col = list(lastData.columns)
     lastTime = dt.datetime.strptime(db["lastTime"], '%H:%M:%S.%f')
     if (lastTime + dt.timedelta(minutes=1)).strftime("%H:%M") == dt.datetime.now().strftime("%H:%M"):
         db["lastTime"] = str(dt.datetime.now().strftime('%H:%M:%S.%f'))
-        d = getData(2, col)
+        d = getData(2, col, client)
         lastData = lastData.drop([lastData.index[0], lastData.index[len(lastData) - 1]])
         lastData = pd.concat([lastData, d])
     else:
         lastData = lastData.drop([lastData.index[len(lastData) - 1]])
-        d = getData(1, col)
+        d = getData(1, col, client)
         lastData = pd.concat([lastData, d])
     toc = time.time()  # Record end time
     elapsed_time = toc - tic  # Calculate elapsed time
