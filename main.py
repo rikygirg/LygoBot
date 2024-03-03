@@ -2,7 +2,7 @@ import time
 from wallets_manager import Wallet
 from bot_class import Bot
 from strategy_class import Strategy
-from functions_file import ExitMargin, SingleParameter
+from functions_file import ExitMargin, SingleParameter, Logger, MEAN
 from db_file import Database
 from binance import Client
 import data_getter
@@ -12,10 +12,11 @@ import sys
 db = Database('data.json')
 client = Client(db['api_key'], db['api_secret'])
 LOCAL_TESTING_TRADING = True
-BACKTESTING = True
+BACKTESTING = False
 if BACKTESTING:
-    backTester = data_getter.Backtesting("data/prova2.csv")
+    backTester = data_getter.Backtesting("data1/")
 NUMERO_BOT = 1
+logger = Logger(BACKTESTING)
 
 # LEGENDA:
 # SingleParameter(name="volume", operator=">=", value=1)
@@ -25,7 +26,7 @@ if LOCAL_TESTING_TRADING:
     databases = [Database(f"db_bot{i}.json") for i in range(NUMERO_BOT)]
     wallets = [Wallet(1000, fees={"buy": 0.00, "sell": 0.00}) for i in range(NUMERO_BOT)]
     strats = [Strategy(indicators=["RSI(6)", "RSI(12)", "RSI(24)", "K_HEIGHT(6, MEAN)"],
-                       constraints_buy=["mean(RSI(6), RSI(12), RSI(24)) <= 12", "K_HEIGHT(6, MEAN)"],
+                       constraints_buy=["mean(RSI(6), RSI(12), RSI(24)) <= 50", "K_HEIGHT(6, MEAN)"],
                        constraints_sell=["K_HEIGHT(6, MEAN)", ExitMargin(take_profit=2,
                                                                          stop_loss=1, dynamic=True,
                                                                          database=databases[i])]) for i in range(NUMERO_BOT)]
@@ -47,11 +48,6 @@ def ora(h=0, m=0, s=0):
     return orario
 
 
-def Log(message):
-    sys.stdout.write(message)
-    sys.stdout.flush()
-
-
 print("Starting LygoBot")
 print("----------------")
 for bot in range(len(bots)):
@@ -68,19 +64,20 @@ while True:
     else:
         if data_to_update[bot]:
             lastData = data_getter.getData(24 + 1, ["close", "volume", "high", "low", "qav"], client)
-        t, lastData = data_getter.get_period_data(lastData, db)
+        t, lastData = data_getter.get_period_data(lastData, db, client)
         data_to_update[bot] = False
     for bot in range(len(bots)):
         if not entrata_attiva[bot]:
+            logger.PrintInline(MEAN(db["RSI6"], db["RSI12"], db["RSI24"]))
             if bots[bot].Check_to_Buy(lastData, db):
-                print("\n" + ora() + "\nI JUST BOUGHT (bot_" + str(bot) + ") " + str(
+                logger.PrintLine("\n" + ora() + "\nI JUST BOUGHT (bot_" + str(bot) + ") " + str(
                     bots[bot].wallet.balanceBTC) + " BTC at " + str(lastData.iloc[-1]["close"]))
                 entrata_attiva[bot] = True
             if not BACKTESTING:
                 time.sleep(0.1)
         if entrata_attiva[bot]:
             if bots[bot].Check_to_Sell(lastData, db):
-                print(
+                logger.PrintLine(
                     "\n" + ora() + "\nI JUST SOLD (bot=" + str(bot) + ") all BTC at " + str(lastData.iloc[-1]["close"]))
                 print("Net balance usd: ", bots[bot].wallet.balanceUSD)
                 data_to_update[bot] = True

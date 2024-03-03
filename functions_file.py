@@ -10,16 +10,18 @@ def Log(message):
 
 
 class Logger:
-    def __init__(self):
-        self.was_printing_continous = False
+    def __init__(self, backtesting):
+        self.was_printing_inline = False
+        self.backtesting = backtesting
 
     def PrintLine(self, message):
-        if self.was_printing_continous:
+        if self.was_printing_inline:
+            self.was_printing_inline = False
             print()
         print(message)
 
-    def PrintContinous(self, message):
-        print(message, end="/r")
+    def PrintInline(self, message):
+        Log(str(message))
 
 
 class SingleParameter:
@@ -104,6 +106,6 @@ def MEAN(*args):
         return None
     array = np.array(args)
     mean = float(np.mean(array))
-    Log(str(round(mean, 4)))
+    # Log(str(round(mean, 4)))
     return mean
 
