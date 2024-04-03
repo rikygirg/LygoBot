@@ -60,7 +60,7 @@ class Backtester:
         self.df1 = pd.DataFrame(columns=columns)
         self.df2 = pd.DataFrame(columns=columns)
         self.current_df = cdf
-        file_path = f"{self.data_folder}/dataset_num:{self.current_df + 1}.csv"
+        file_path = f"{self.data_folder}/dataset_num_{self.current_df + 1}.csv"
         self.df1 = pd.read_csv(file_path)
         self.stop = stop
         self.pbar = tqdm(total=self.stop - self.tick)
