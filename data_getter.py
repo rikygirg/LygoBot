@@ -1,21 +1,15 @@
-import sys
-
 import numpy as np
-
-from data1.dataset_manager import CSVReader
-from db_file import Database
 from tqdm import tqdm
-import polars as pl
+from functions_file import save_data
 import pandas as pd
 import datetime as dt
 import time
 import os
-import csv
-import re
 
 
-def getData(timeframe, col, client):
-    symbol = "BTCUSDT"
+
+def getData(timeframe, col, client, CURRENCY):
+    symbol = CURRENCY
     interval = '1m'
     d = None
     while d is None:
@@ -30,7 +24,6 @@ def getData(timeframe, col, client):
         except:
             pass
     return d
-
 
 def get_period_data(lastData, db, client):
     tic = time.time()  # Record start time
@@ -47,6 +40,8 @@ def get_period_data(lastData, db, client):
         lastData = pd.concat([lastData, d])
     toc = time.time()  # Record end time
     elapsed_time = toc - tic  # Calculate elapsed time
+    save_data("data_log_period.txt", str(len(lastData)) + "\n" + str(lastData))
+    print(lastData)
     return elapsed_time, lastData
 
 
@@ -55,35 +50,43 @@ def get_current_price():
     return None
 
 
-class Backtesting:
-    def __init__(self, folder_path):
+import pandas as pd
 
-        # Initialize tick to 0
-        self.tick = 0
-        self.csv_reader = CSVReader()
-        self.csv_reader.save_filenames()
+class Backtester:
+    def __init__(self, data_folder, max_period, stop, columns=["close", "volume", "high", "low", "qav"], cdf = 0):
+        self.tick = max_period * 60
+        self.data_folder = data_folder
+        self.columns = columns
+        self.df1 = pd.DataFrame(columns=columns)
+        self.df2 = pd.DataFrame(columns=columns)
+        self.current_df = cdf
+        file_path = f"{self.data_folder}/dataset_num:{self.current_df + 1}.csv"
+        self.df1 = pd.read_csv(file_path)
+        self.stop = stop
+        self.pbar = tqdm(total=self.stop - self.tick)
 
-    def get_data(self, N, col):
-
-
-        if self.tick < N*60:
-            self.tick = N*60
-
-        output_df = pd.DataFrame(columns=col)
-        i = self.tick
-        n = 1
-        while n < N:
-            while self.df["date"].iloc[i][17:19] != "59":
-                i -= 1
-            output_df.loc[self.df["date"].iloc[i]] = self.df[col].iloc[i]
-            n += 1
-            i -= 59
+    def getData(self, period, tick=None):
+        #start_time = time.time()
+        offset = self.tick % 60
+        temp = self.tick - offset
+        indices = [temp + i*60-1 for i in range(-period+2, 1)]
+        indices.append(self.tick)
+        data = self.df1.iloc[indices]
+        data = data.drop(data.columns[0], axis=1)
+        data = data.set_index('date')
+        #end_time = time.time()
+        #elapsed_time = end_time - start_time
+        #print(elapsed_time)
+        #print(data, len(data))
         self.tick += 1
-        output_df = output_df[::-1]
-        output_df = output_df.iloc[-N:]
-        output_df.loc[self.df["date"].iloc[self.tick]] = self.df[col].iloc[self.tick]
-        # print("   tick" + str(self.tick) + " out of " + str(len(self.df)))
-        return output_df
+        self.pbar.update(1)
+        if self.tick == self.stop:
+            self.pbar.close()
+            return data, False
+        else:
+            return data, True
+            
+
 
 
 class Backtesting2:

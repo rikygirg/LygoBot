@@ -4,11 +4,35 @@ import indicators_file
 import numpy as np
 import sys
 
+
 def Log(message):
     sys.stdout.write("\r" + message)
     sys.stdout.flush()
 
 
+class Strategy:
+    def __init__(self, constraints_buy=None, constraints_sell=None, percentual=1):
+        self.percentual_to_buy = percentual
+        self.buy_constraints = np.array(constraints_buy)
+        self.sell_constraints = np.array(constraints_sell)
+
+    def Calculate_if_Buy(self, data, wallet, bot_db, db):
+        bot_db["price_buy"] = data.iloc[-1]["close"]
+        results = [constraint.Check(data, db) for constraint in self.buy_constraints]
+        if all(results):
+            qty = int(wallet.balanceUSD / data.iloc[-1]["close"] * self.percentual_to_buy * 1000) / 1000.0
+            bot_db["price_buy"] = data.iloc[-1]["close"]
+            return qty, data.iloc[-1]["close"]
+        return None, data.iloc[-1]["close"]
+
+    def Calculate_if_Sell(self, data, wallet, bot_db, db):
+        results = [constraint.Check(data, db) for constraint in self.sell_constraints]
+        if all(results):
+            return wallet.balanceBTC, data.iloc[-1]["close"]
+        return None, data.iloc[-1]["close"]
+
+
+'''
 class Strategy:
     def __init__(self, indicators=None, constraints_buy=None, constraints_sell=None, perc=1):
         self.buy_constraints = np.array(constraints_buy)  # ["mean(rsi(6), rsi(12), rsi(24)) <= 12"]
@@ -77,4 +101,5 @@ class Strategy:
         if all(results):
             self.qty = wallet.balanceBTC
             return self.qty, data.iloc[-1]["close"]
-        return 0, data.iloc[-1]["close"]
+        return None, data.iloc[-1]["close"]
+'''

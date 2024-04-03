@@ -1,3 +1,11 @@
-/data/prova2.csv
 /prova/
-/db_bot0.json
+/savedData/
+/tradeHistory/
+/tradeHistoryBackup/
+/tradeHistoryBackup2/
+/db_bots/
+/data2/
+/data06_25/
+/.venv/
+/__pycache__/
+data_log_period.txt
