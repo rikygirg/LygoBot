@@ -8,22 +8,24 @@ from bot_class import Bot
 import pandas as pd
 import time
 
+BALANCE_INIZIALE=1000.00
 p_df = pd.read_csv("Backtesting_1_12_feb24.csv")
 db = Database('data.json')
 CURRENCY = "BTCFDUSD"
 NUMERO_BOT = range(1)
 for i in NUMERO_BOT:
-    print(f'Doing: {int(p_df.iloc[i]['EMA LOW'])}_{int(p_df.iloc[i]['EMA HIGH'])}_{p_df.iloc[i]['BOUNDARY UP']}_{p_df.iloc[i]['BOUNDARY LOW']}_{p_df.iloc[i]['TAKE PROFIT']}_{p_df.iloc[i]['STOP LOSS']}')
+    print(
+        f"Doing: {int(p_df.iloc[i]['EMA LOW'])}_{int(p_df.iloc[i]['EMA HIGH'])}_{p_df.iloc[i]['BOUNDARY UP']}_{p_df.iloc[i]['BOUNDARY LOW']}_{p_df.iloc[i]['TAKE PROFIT']}_{p_df.iloc[i]['STOP LOSS']}")
 time.sleep(0.1)
-bt = Backtester("/Users/rikygirg/PycharmProjects/BOT_LYGO/data06_25", 202, 959997, cdf=0)
+bt = Backtester(r'C:\Users\hp\Documents\Backtesting bot\Data_getter\data', 202, 949436, cdf=0)
 
-wallets = [Wallet(1000.00, fees={"buy": 0.00, "sell": 0.00}) for i in NUMERO_BOT]
+wallets = [Wallet(BALANCE_INIZIALE, fees={"buy": 0.00, "sell": 0.00}) for i in NUMERO_BOT]
 databases = [Database(f"db_bots/db_bot_bt{i}.json") for i in NUMERO_BOT]
 strats = [Strategy(constraints_buy=[CrossingEMA([int(p_df.iloc[i]['EMA LOW']),
                                                  int(p_df.iloc[i]['EMA HIGH'])],
                                                 [p_df.iloc[i]['BOUNDARY UP'],
                                                  p_df.iloc[i]['BOUNDARY LOW']]),
-                                                 CandlesHeight()],
+                                    CandlesHeight()],
                    constraints_sell=[ExitMargin(take_profit=p_df.iloc[i]['TAKE PROFIT'],
                                                 stop_loss=p_df.iloc[i]['STOP LOSS'],
                                                 candle_based=True,
@@ -33,11 +35,10 @@ bots = [Bot(wallets[i], strats[i], databases[i], f"bot_bt{i}", leverage=1) for i
 entrata_attiva = [False for i in NUMERO_BOT]
 go = True
 trades = [[] for i in NUMERO_BOT]
-balances = [[1000] for i in NUMERO_BOT]
-
+balances = [[BALANCE_INIZIALE] for i in NUMERO_BOT]
 
 while go:
-    #start_time = time.time()
+    # start_time = time.time()
     lastData, go = bt.getData(200 + 2)
     for bot in NUMERO_BOT:
         if not entrata_attiva[bot]:
@@ -56,17 +57,19 @@ while go:
                 balances[bot].append(bal)
                 entrata_attiva[bot] = False
                 print("\nI JUST SOLD (bot=" + str(bot) + ") all BTC at " + str(lastData.iloc[-1]["close"])
-                    + "\nNet balance usd: " + str(bots[bot].wallet.balanceUSD))
-                #print(mess, end="\r", flush=True)
-    #end_time = time.time()
-    #elapsed_time = end_time - start_time
-    #print(elapsed_time)
+                      + "\nNet balance usd: " + str(bots[bot].wallet.balanceUSD))
+                # print(mess, end="\r", flush=True)
+    # end_time = time.time()
+    # elapsed_time = end_time - start_time
+    # print(elapsed_time)
 
 print("Saving files...")
 
 for i in NUMERO_BOT:
     p_df.loc[i, "PROFIT"] = balances[i][-1]
-    with open(f'tradeHistory/trades_{int(p_df.iloc[i]['EMA LOW'])}_{int(p_df.iloc[i]['EMA HIGH'])}_{p_df.iloc[i]['BOUNDARY UP']}_{p_df.iloc[i]['BOUNDARY LOW']}_{p_df.iloc[i]['TAKE PROFIT']}_{p_df.iloc[i]['STOP LOSS']}_{bot}.txt', 'w') as file:
+    with open(
+            f"tradeHistory/trades_{int(p_df.iloc[i]['EMA LOW'])}_{int(p_df.iloc[i]['EMA HIGH'])}_{p_df.iloc[i]['BOUNDARY UP']}_{p_df.iloc[i]['BOUNDARY LOW']}_{p_df.iloc[i]['TAKE PROFIT']}_{p_df.iloc[i]['STOP LOSS']}_{bot}.txt",
+            'w') as file:
         for j in trades[i]:
             file.write(f"{j}\n")
 

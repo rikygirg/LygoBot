@@ -9,3 +9,6 @@
 /.venv/
 /__pycache__/
 data_log_period.txt
+path_different.json
+path_manager.py
+data.json
