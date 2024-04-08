@@ -12,12 +12,12 @@ BALANCE_INIZIALE=1000.00
 p_df = pd.read_csv("Backtesting_1_12_feb24.csv")
 db = Database('data.json')
 CURRENCY = "BTCFDUSD"
-NUMERO_BOT = range(1)
+NUMERO_BOT = range(10)
 for i in NUMERO_BOT:
     print(
         f"Doing: {int(p_df.iloc[i]['EMA LOW'])}_{int(p_df.iloc[i]['EMA HIGH'])}_{p_df.iloc[i]['BOUNDARY UP']}_{p_df.iloc[i]['BOUNDARY LOW']}_{p_df.iloc[i]['TAKE PROFIT']}_{p_df.iloc[i]['STOP LOSS']}")
 time.sleep(0.1)
-bt = Backtester(r'C:\Users\hp\Documents\Backtesting bot\Data_getter\data', 202, 949436, cdf=0)
+bt = Backtester("data06_25", 202, 949436, cdf=0)
 
 wallets = [Wallet(BALANCE_INIZIALE, fees={"buy": 0.00, "sell": 0.00}) for i in NUMERO_BOT]
 databases = [Database(f"db_bots/db_bot_bt{i}.json") for i in NUMERO_BOT]
