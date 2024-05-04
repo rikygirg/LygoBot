@@ -35,7 +35,9 @@ else:
 databases = [Database(f"db_bot{i}.json") for i in range(NUMERO_BOT)]
 # strats = [Strategy(constraints_buy=[MeanRSI([6, 12, 24], less_than=True, value=32.5), CandlesHeight(),
 #                                    MeanRSI([6, 12, 24], less_than=False, value=30)], 
-strats = [Strategy(constraints_buy=[CrossingEMA([12, 24], [0.5, 0.6]), CandlesHeight()],
+strats = [Strategy(constraints_buy=[CrossingEMA(periods=[12, 24], 
+                                                targets=[1, 20], 
+                                                boundaries=[0.5, 0.6]), CandlesHeight()],
                    constraints_sell=[ExitMargin(take_profit=2.5,
                                                 stop_loss=1.5, candle_based=True,
                                                 database=databases[i])])

@@ -6,12 +6,12 @@ class Bot:
         self.name = name
         self.leverage = leverage
 
-    def Check_to_Buy(self, dati, db):
-        (amountBTC, priceBTC) = self.strategy.Calculate_if_Buy(dati, self.wallet, self.db, db)
+    def Check_to_Buy(self, dati, db, cross = False):
+        (amountBTC, priceBTC) = self.strategy.Calculate_if_Buy(dati, self.wallet, self.db, db, cross )
         if amountBTC:
             amountBTC = int(amountBTC * self.leverage * 1000)/1000.0
             self.wallet.buy(amountBTC, priceBTC)
-            db["qty_sell"] = amountBTC
+            self.db["qty_sell"] = amountBTC
             return True
         return False
 
@@ -19,7 +19,7 @@ class Bot:
         (amountBTC, priceBTC) = self.strategy.Calculate_if_Sell(dati, self.wallet, self.db, db)
         if amountBTC:
             amountBTC = int(amountBTC / self.leverage * 1000)/1000.0
-            amountBTC = db["qty_sell"]  # CONTROLLARE SE BOT DIVERSI HANNO PORTAFOGLI
+            amountBTC = self.db["qty_sell"]  # CONTROLLARE SE BOT DIVERSI HANNO PORTAFOGLI
             self.wallet.sell(amountBTC, priceBTC)
             return True
         return False

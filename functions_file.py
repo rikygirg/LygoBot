@@ -5,6 +5,7 @@ from datetime import datetime
 import os
 from path_manager import PathManager
 pm = PathManager()
+import csv
 
 def move_json(start_path, end_path, keys_to_remove=[]):
     # Load JSON data from start_path
@@ -156,3 +157,33 @@ def MEAN(*args):
     # Log(str(round(mean, 4)))
     return mean
 
+def save_data_to_csv(x, y, z, filename='dataNew/results.csv'):
+    # Controlla se il file esiste già per scrivere l'intestazione solo se necessario
+    file_exists = os.path.exists(filename)
+
+    with open(filename, mode='a', newline='') as file:
+        writer = csv.writer(file)
+
+        # Se il file non esiste, scrivi l'intestazione
+        if not file_exists:
+            writer.writerow(['TP', 'SL', 'Balance'])
+
+        # Gestisci sia input singoli che iterabili
+        if not isinstance(x, (list, tuple)):
+            # Assumi che tutti siano singoli se uno è singolo
+            writer.writerow([x, y, z])
+        else:
+            # Altrimenti procedi come prima
+            for xi, yi, zi in zip(x, y, z):
+                writer.writerow([xi, yi, zi])
+
+
+def calculate_execution_time(func):
+    def wrapper(*args, **kwargs):
+        start_time = datetime.now()
+        result = func(*args, **kwargs)
+        end_time = datetime.now()
+        execution_time = end_time - start_time
+        print(f"Execution time of {func.__name__}: {execution_time}")
+        return result
+    return wrapper

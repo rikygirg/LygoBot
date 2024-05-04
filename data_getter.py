@@ -1,6 +1,7 @@
 import numpy as np
 from tqdm import tqdm
 from functions_file import save_data
+from datetime import datetime
 import pandas as pd
 import datetime as dt
 import time
@@ -50,42 +51,87 @@ def get_current_price():
     return None
 
 
-import pandas as pd
-
 class Backtester:
-    def __init__(self, data_folder, max_period, stop, columns=["close", "volume", "high", "low", "qav"], cdf = 0):
-        self.tick = max_period * 60
+    def __init__(self, data_folder, max_period, buffer_percentage=20, columns=["close", "volume", "high", "low", "qav"], max_index=3):
+        self.max_period = max_period
+        self.max_index = max_index
         self.data_folder = data_folder
         self.columns = columns
-        self.df1 = pd.DataFrame(columns=columns)
-        self.df2 = pd.DataFrame(columns=columns)
-        self.current_df = cdf
-        file_path = f"{self.data_folder}/dataset_num_{self.current_df + 1}.csv"
-        self.df1 = pd.read_csv(file_path)
-        self.stop = stop
-        self.pbar = tqdm(total=self.stop - self.tick)
+        self.buffer_percentage = buffer_percentage
+        self.current_df_index = 1
+        self.df1 = None
+        self.overlapping = False
+        self.load_dataframe(self.current_df_index)
+        self.tick = self.max_period * 60
+        #self.pbar = tqdm(total=self.get_pbar_total())
+        #self.__testing_df = pd.DataFrame(columns=["date"])
+        #self.__i = 0
+
+    def get_pbar_total(self):
+        return self.stop - self.tick
+
+    def load_dataframe(self, index):
+        file_path = f"{self.data_folder}/dataset_num_{index}.csv"
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"No such file: {file_path}")
+        df = pd.read_csv(file_path)
+        overlap = 0
+        if self.overlapping:
+            overlap = int(len(self.df1) * self.buffer_percentage / 100 // 60 * 60)
+            self.df1 = pd.concat([self.df1[-overlap:], df.head(overlap)])
+            self.tick = overlap
+            #print(self.tick)
+            self.stop = overlap + self.max_period * 60
+        else:
+            print("Percentage:", (index - 1) / self.max_index * 100)
+            self.df1 = df
+            self.tick = self.max_period * 60
+            self.stop = len(self.df1)        
+
+    def createNewDf(self):
+        if not self.overlapping:
+            self.current_df_index += 1
+        self.overlapping = not self.overlapping
+        if self.current_df_index <= self.max_index:
+            self.load_dataframe(self.current_df_index)
+            #self.pbar = tqdm(total=self.get_pbar_total())
+            return True
+        else:
+            return False
+                
 
     def getData(self, period, tick=None):
-        #start_time = time.time()
-        offset = self.tick % 60
-        temp = self.tick - offset
-        indices = [temp + i*60-1 for i in range(-period+2, 1)]
-        indices.append(self.tick)
-        data = self.df1.iloc[indices]
-        data = data.drop(data.columns[0], axis=1)
-        data = data.set_index('date')
-        #end_time = time.time()
-        #elapsed_time = end_time - start_time
-        #print(elapsed_time)
-        #print(data, len(data))
-        self.tick += 1
-        self.pbar.update(1)
-        if self.tick == self.stop:
-            self.pbar.close()
-            return data, False
-        else:
+        try:
+            if self.tick == self.stop:
+                #self.pbar.close()
+                if not self.createNewDf():
+                    #self.__testing_df.to_csv(f"{self.data_folder}/testing_df.csv")
+                    return None, False
+            offset = self.tick % 60
+            temp = self.tick - offset
+            indices = [temp + i * 60 - 1 for i in range(-period + 2, 1)]
+            indices.append(self.tick)
+            if any(idx < 0 or idx >= len(self.df1) for idx in indices):
+                print(indices, self.tick)
+                raise IndexError("Indices are out of bounds.")
+            #self.__testing_df.loc[self.__i, "date"] = self.df1.iloc[self.tick]["date"]
+            #self.__i += 1
+            data = self.df1.iloc[indices]
+            data = data.drop(data.columns[0], axis=1)  # Assuming the first column isn't needed
+            data = data.set_index('date')
+            self.tick += 1
+            #self.pbar.update(1)
             return data, True
-            
+        except Exception as e:
+            print(f"Error in getData: {e}")
+            return None, False
+
+
+    def setCross(self):
+        self.df1.loc[self.tick, "Cross"] = 1
+
+    def saveDf(self):
+        self.df1.to_csv(f"{self.data_folder}/dataset_num_{self.current_df_index}.csv", index=False)
 
 
 

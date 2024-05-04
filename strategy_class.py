@@ -16,9 +16,12 @@ class Strategy:
         self.buy_constraints = np.array(constraints_buy)
         self.sell_constraints = np.array(constraints_sell)
 
-    def Calculate_if_Buy(self, data, wallet, bot_db, db):
+    def Calculate_if_Buy(self, data, wallet, bot_db, db, cross = False):
         bot_db["price_buy"] = data.iloc[-1]["close"]
-        results = [constraint.Check(data, db) for constraint in self.buy_constraints]
+        if not cross:
+            results = [constraint.Check(data, db) for constraint in self.buy_constraints]
+        else:
+            results = [data.iloc[-1]["Cross"] == 1.0]
         if all(results):
             qty = int(wallet.balanceUSD / data.iloc[-1]["close"] * self.percentual_to_buy * 1000) / 1000.0
             bot_db["price_buy"] = data.iloc[-1]["close"]

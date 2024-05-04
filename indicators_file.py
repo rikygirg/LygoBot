@@ -1,6 +1,8 @@
 import re
 import sys
-
+import pandas as pd
+import time
+#from numba import njit
 import numpy as np
 
 
@@ -53,18 +55,6 @@ def _ema_ricorsiva(data, alpha, ema_last):
     return _ema_ricorsiva(data[1:], alpha, ema)
 
 
-def EMA(data, db, period=12, alpha=None):
-    period += 1
-    data = data[["close"]].values
-    if alpha is None:
-        alpha = 2 / (period + 1)
-    # ema_start = data[-period:].mean()
-    ema_start = data[-period]
-    ema_value = _ema_ricorsiva(data[-(period - 1):], alpha, ema_start)
-    db[f"EMA{period}"] = float(ema_value)
-    # print(f"\n ema{period}: {ema_value}")
-    return float(ema_value)
-
 
 '''
 def Get_Indicator(input_string):
@@ -103,28 +93,72 @@ class MeanRSI:
         return not ((rsi_mean <= self.value) ^ self.minor_sign)
 
 
+def EMA(data, db, period=12, alpha=None):
+    period += 1
+    data = data[["close"]].values
+    if alpha is None:
+        alpha = 2 / (period + 1)
+    # ema_start = data[-period:].mean()
+    ema_start = data[-period]
+    ema_value = _ema_ricorsiva(data[-(period - 1):], alpha, ema_start)
+    db[f"EMA{period-1}"] = float(ema_value)
+    # print(f"\n ema{period}: {ema_value}")
+    return float(ema_value)
+
+def EMAdf(data, ema_df, db, period=12, alpha=None):
+    if alpha is None:
+        alpha = 2 / (period + 1)
+    if data.index[-1] not in ema_df.index:
+        ema_value = data.iloc[-1]["close"] * alpha + ema_df.iloc[-1] * (1 - alpha)
+        ema_df.loc[data.index[-1]] = ema_value
+        db[f"EMA{period}"] = ema_value.values[0]
+        ema_df = ema_df.drop(ema_df.index[0])
+    return ema_df
+
 class CrossingEMA:
-    def __init__(self, periods, boundaries=[0.6, 0.85]):
+    def __init__(self, periods, targets, boundaries=[2, 2]):
         self.periods = periods
+        self.targets = targets
         self.boundaries = boundaries
         self.is_first_lower = True  # is EMA(12) > EMA(24)? True
         self.__is_first_iter = True
         self.__allowed_to_buy = True
+        self.__allowed_to_buy_cross = False
+        self.emas = [pd.DataFrame(np.nan, index=range(max(self.targets)+1), columns=['Ema']) for p in periods]
         
     def Check(self, data, db):
-        ema_array = np.array([EMA(data, db, period=i) for i in self.periods])
-        if ema_array[0] - ema_array[1] > self.boundaries[0] * db["K_HEIGHT"] or ema_array[1] - ema_array[0] > self.boundaries[1] * db["K_HEIGHT"]:
+        #data.index = pd.to_datetime(data.index, format='%Y-%m-%d %H:%M:%S.%f').strftime('%Y-%m-%d %H:%M')
+        if self.__is_first_iter:
+            data.index = pd.to_datetime(data.index, format='%Y-%m-%d %H:%M:%S.%f').strftime('%Y-%m-%d %H:%M')
+            for i in range(len(self.periods)):
+                self.emas[i] = self.emas[i].set_index(data.iloc[-(max(self.targets)+1):].index)
+                self.emas[i].iloc[-1] = EMA(data, db, period=self.periods[i])
+                #riempire l'array con i valori di ema
+        else:
+            data = data.iloc[-2:]
+            data.index = pd.to_datetime(data.index, format='%Y-%m-%d %H:%M:%S.%f').strftime('%Y-%m-%d %H:%M')
+        for i in range(len(self.periods)):
+            self.emas[i] = EMAdf(data, self.emas[i], db, period=self.periods[i])
+        #print(self.emas[0])
+        z = 0  # Definisci z qui
+        ema_array = np.array([[self.emas[i].iloc[-self.targets[j]]["Ema"] for i in range(len(self.periods))] for j in range(len(self.targets))])        
+        if ema_array[z][0] - ema_array[z][1] > self.boundaries[0] * db["K_HEIGHT"] or ema_array[z][1] - ema_array[z][0] > self.boundaries[1] * db["K_HEIGHT"]:
             self.__allowed_to_buy = True
+        if ema_array[z+1][0] is not None:
+            if ema_array[z+1][1] < ema_array[z+1][0]:
+                self.__allowed_to_buy_cross = False
+            else:
+                self.__allowed_to_buy_cross = True
         db["Can Buy"] = self.__allowed_to_buy 
         if self.__is_first_iter:
-            self.is_first_lower = ema_array[0] < ema_array[1]
+            self.is_first_lower = ema_array[z][0] < ema_array[z][1]
             self.__is_first_iter = False
-        if self.is_first_lower and ema_array[0] >= ema_array[1]:
+        if self.is_first_lower and ema_array[z][0] >= ema_array[z][1]:
             self.is_first_lower = False
-            result = self.__allowed_to_buy
+            result = self.__allowed_to_buy and self.__allowed_to_buy_cross
             self.__allowed_to_buy = False
             return result
-        elif (not self.is_first_lower) and ema_array[0] < ema_array[1]:
+        elif (not self.is_first_lower) and ema_array[z][0] < ema_array[z][1]:
             self.is_first_lower = True
             self.__allowed_to_buy = False
         return False
