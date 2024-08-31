@@ -10,7 +10,7 @@ done
 
 
 # Path to the virtual environment activation script
-VENV_ACTIVATE_PATH="/home/ubuntu/BOT_LYGO/.venv/bin/activate"
+VENV_ACTIVATE_PATH="PATH_TO_VENV/bin/activate"
 
 # Start a new detached screen session named "bot" and execute the following commands inside it
 screen -dmS bot bash -c " \
@@ -18,7 +18,7 @@ screen -dmS bot bash -c " \
     source $VENV_ACTIVATE_PATH; \
     \
     # Run the main.py file
-    python3 /home/ubuntu/BOT_LYGO/main.py; \
+    python3 PATH_TO_BOT_LYGO/main.py; \
     \
     # Keep the screen session open after the script finishes
     exec bash"

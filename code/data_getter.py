@@ -1,7 +1,6 @@
 import numpy as np
 from tqdm import tqdm
 from functions_file import save_data
-from datetime import datetime
 import pandas as pd
 import datetime as dt
 import time
@@ -22,7 +21,7 @@ def getData(timeframe, col, client, CURRENCY):
             data.index = [dt.datetime.fromtimestamp(x / 1000.0) for x in data.close_time]
             data['open_time'] = [dt.datetime.fromtimestamp(int(str(d)[:-3])) for d in data['open_time']]
             d = data[col].astype(float)
-        except:
+        except:  # noqa: E722
             pass
     return d
 
